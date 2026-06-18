@@ -33,11 +33,20 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
+  const provider = activeProviderName();
+  const llmKeyConfigured =
+    provider === "anthropic"
+      ? Boolean(config.llm.anthropic.apiKey)
+      : provider === "sarvam"
+        ? Boolean(config.llm.sarvam.apiKey)
+        : false;
+
   res.json({
     ok: true,
-    provider: activeProviderName(),
+    provider,
     model: activeModel(),
     fallback: activeFallbackName(),
+    llmKeyConfigured,
     database: isSupabaseConfigured() ? "supabase" : "disabled",
     databaseMode: supabaseMode(),
   });

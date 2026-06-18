@@ -17,7 +17,12 @@ export function createAnthropicProvider(): LLMProvider {
     );
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({
+    apiKey,
+    // Render cold starts + long Teacher prompts can exceed default timeouts.
+    timeout: 120_000,
+    maxRetries: 3,
+  });
 
   function split(messages: ChatMessage[]): {
     system?: string;
