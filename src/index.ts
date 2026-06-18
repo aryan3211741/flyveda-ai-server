@@ -1,12 +1,14 @@
 import express from "express";
 import cors from "cors";
-import { config } from "./config.js";
+import { config, isSupabaseConfigured, supabaseMode } from "./config.js";
 import { activeFallbackName, activeModel, activeProviderName } from "./llm/client.js";
 import { errorHandler } from "./middleware/errors.js";
 import { teacherRouter } from "./routes/teacher.js";
 import { questionsRouter } from "./routes/questions.js";
 import { syllabusRouter } from "./routes/syllabus.js";
 import { learningRouter } from "./routes/learning.js";
+import { accountRouter } from "./routes/account.js";
+import { chatRouter } from "./routes/chat.js";
 
 const app = express();
 
@@ -23,21 +25,32 @@ app.get("/health", (_req, res) => {
     provider: activeProviderName(),
     model: activeModel(),
     fallback: activeFallbackName(),
+    database: isSupabaseConfigured() ? "supabase" : "disabled",
+    databaseMode: supabaseMode(),
   });
 });
 
+app.use("/api/ai", chatRouter);
 app.use("/api/ai", teacherRouter);
 app.use("/api/ai", questionsRouter);
 app.use("/api/ai", syllabusRouter);
 app.use("/api/ai", learningRouter);
+app.use("/api/ai", accountRouter);
 
 app.use(errorHandler);
 
-app.listen(config.port, () => {
-  console.log(`FlyVeda AI server listening on http://localhost:${config.port}`);
+// Bind 0.0.0.0 so cloud hosts (Render, Railway, etc.) can route traffic in.
+app.listen(config.port, "0.0.0.0", () => {
+  console.log(`FlyVeda AI server listening on port ${config.port}`);
   const fallback = activeFallbackName();
   console.log(
     `  provider: ${activeProviderName()}  model: ${activeModel()}` +
       (fallback ? `  fallback: ${fallback}` : "")
   );
+  const dbMsg = {
+    service_role: "supabase (service_role, persistence on)",
+    anon: "supabase (anon + user JWT, RLS-enforced, persistence on)",
+    disabled: "disabled (set SUPABASE_URL + SUPABASE_ANON_KEY or SERVICE_ROLE_KEY)",
+  }[supabaseMode()];
+  console.log(`  database: ${dbMsg}`);
 });

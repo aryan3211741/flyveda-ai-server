@@ -11,9 +11,23 @@ const chatMessageSchema = z.object({
 export const teacherRequestSchema = z.object({
   messages: z.array(chatMessageSchema).min(1).max(40),
   goal: goalSchema.optional(),
+  /** Optional existing chat session to append to (created automatically if omitted). */
+  sessionId: z.string().uuid().optional(),
   /** When true (default) responds via SSE stream; false returns one JSON payload. */
   stream: z.boolean().optional().default(true),
 });
+
+/**
+ * Simplified chat contract for the app: send the latest message plus optional
+ * prior turns; get one JSON answer back. Wraps the AI Teacher.
+ */
+export const chatRequestSchema = z.object({
+  message: z.string().min(1).max(4000),
+  /** Prior turns for context (oldest first), excluding the new message. */
+  history: z.array(chatMessageSchema).max(40).optional().default([]),
+  goal: goalSchema.optional(),
+});
+export type ChatRequest = z.infer<typeof chatRequestSchema>;
 export type TeacherRequest = z.infer<typeof teacherRequestSchema>;
 
 export const generateQuestionsSchema = z.object({
@@ -104,8 +118,29 @@ export const explainMcqSchema = z.object({
   correct_option: optionKeySchema,
   /** What the student picked (optional) — enables targeted feedback. */
   student_option: optionKeySchema.optional(),
+  /** Optional context so the attempt can be recorded against progress. */
+  question_id: z.string().uuid().optional(),
+  subject: subjectSchema.optional(),
+  topic_code: z.string().min(1).max(64).optional(),
 });
 export type ExplainMcqRequest = z.infer<typeof explainMcqSchema>;
+
+/** Record a single answered MCQ (for progress tracking from the app). */
+export const recordAttemptSchema = z.object({
+  question_id: z.string().uuid().optional(),
+  subject: subjectSchema.optional(),
+  topic_code: z.string().min(1).max(64).optional(),
+  selected_option: optionKeySchema,
+  correct_option: optionKeySchema,
+});
+export type RecordAttemptRequest = z.infer<typeof recordAttemptSchema>;
+
+/** Fetch previously generated questions the user has not yet attempted. */
+export const unseenQuestionsSchema = z.object({
+  subject: subjectSchema,
+  limit: z.coerce.number().int().min(1).max(50).optional().default(10),
+});
+export type UnseenQuestionsRequest = z.infer<typeof unseenQuestionsSchema>;
 
 /** Validated shape returned by the model for an explanation. */
 export const answerExplanationResultSchema = z.object({

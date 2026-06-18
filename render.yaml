@@ -1,0 +1,34 @@
+# Render Blueprint — deploy from the Render dashboard:
+# New -> Blueprint -> connect this repo -> apply.
+#
+# After deploy, set secret env vars in Render (Environment tab):
+#   ANTHROPIC_API_KEY, LLM_PROVIDER, etc. (see .env.example)
+
+services:
+  - type: web
+    name: flyveda-ai-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: LLM_MODEL
+        value: claude-sonnet-4-6
+      - key: LLM_TEMPERATURE
+        value: "0.3"
+      - key: LLM_MAX_TOKENS
+        value: "4000"
+      - key: CORS_ORIGINS
+        value: "*"
+      # Secrets — set values in the Render dashboard (never commit real keys):
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: LLM_FALLBACK_PROVIDER
+        sync: false
