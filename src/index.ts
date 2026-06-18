@@ -19,6 +19,19 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 
+app.get("/", (_req, res) => {
+  res.json({
+    name: "FlyVeda AI Server",
+    ok: true,
+    endpoints: {
+      health: "GET /health",
+      chat: "POST /api/ai/chat  { message, history?, goal? }",
+      teacher: "POST /api/ai/teacher",
+      generateMcqs: "POST /api/ai/generate-mcqs",
+    },
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
